@@ -217,9 +217,18 @@ class TransactionItem extends StatelessWidget {
         Map<String, String> details = {
           TransactionDetailKeys.amount: formattedAmount,
           TransactionDetailKeys.timestamp: formattedDate,
-          TransactionDetailKeys.address: address,
-          TransactionDetailKeys.txid: txid,
         };
+
+        // The deposit address and txid are only known if the federation
+        // exposes the receive outpoint (walletv2 federations older than the
+        // outpoint API return neither), so omit the rows when empty rather
+        // than showing blank fields.
+        if (address.isNotEmpty) {
+          details[TransactionDetailKeys.address] = address;
+        }
+        if (txid.isNotEmpty) {
+          details[TransactionDetailKeys.txid] = txid;
+        }
 
         // The federation fee charged on the claimed deposit, computed from the
         // operation's input/output difference. Absent for deposits made before
