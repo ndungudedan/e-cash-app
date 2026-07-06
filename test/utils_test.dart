@@ -168,7 +168,7 @@ void main() {
       // At $50,000/BTC, 10,000,000 sats = $5,000
       expect(
         calculateFiatValue(50000.0, 10000000, FiatCurrency.usd),
-        '\$5000.00',
+        '\$5,000.00',
       );
     });
 
@@ -199,7 +199,7 @@ void main() {
     test('calculates JPY correctly with ¥ prefix', () {
       expect(
         calculateFiatValue(7000000.0, 100000, FiatCurrency.jpy),
-        '¥7000.00',
+        '¥7,000.00',
       );
     });
 

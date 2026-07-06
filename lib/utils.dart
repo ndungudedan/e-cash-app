@@ -170,7 +170,7 @@ String calculateFiatValue(
     FiatCurrency.jpy => ('¥', 'before'),
   };
 
-  final formattedValue = fiatValue.toStringAsFixed(2);
+  final formattedValue = NumberFormat('#,##0.00').format(fiatValue);
   return symbolPosition == 'before'
       ? '$symbol$formattedValue'
       : '$formattedValue$symbol';
