@@ -17,6 +17,7 @@ use fedimint_wallet_client::{
 use fedimint_walletv2_client::{
     events::ReceivePaymentEvent as V2ReceivePaymentEvent, FinalReceiveOperationState,
     FinalSendOperationState, WalletClientModule as WalletV2Module,
+    WalletOperationMeta as WalletV2OperationMeta,
 };
 use futures_util::StreamExt;
 use tokio::sync::{
@@ -691,6 +692,40 @@ impl WalletHandler {
                                 .await
                             {
                                 Ok(FinalReceiveOperationState::Success) => {
+                                    // Reaching `Success` only means the claim tx
+                                    // was accepted into consensus; the ecash it
+                                    // mints is issued asynchronously by the mint
+                                    // module. Wait for those outputs before
+                                    // surfacing Claimed so the balance reflects the
+                                    // deposit (the same step walletv2's own
+                                    // `await_receive` performs after success).
+                                    // Otherwise the dashboard refreshes its balance
+                                    // before the ecash lands and shows a stale
+                                    // value until the next manual refresh.
+                                    if let Some(op) =
+                                        client.operation_log().get_operation(operation_id).await
+                                    {
+                                        if let WalletV2OperationMeta::Receive(receive) =
+                                            op.meta::<WalletV2OperationMeta>()
+                                        {
+                                            if let Err(e) = client
+                                                .await_primary_bitcoin_module_outputs(
+                                                    operation_id,
+                                                    receive
+                                                        .change_outpoint_range
+                                                        .into_iter()
+                                                        .collect(),
+                                                )
+                                                .await
+                                            {
+                                                info_to_flutter(format!(
+                                                    "walletv2 await primary module outputs error: {e:?}"
+                                                ))
+                                                .await;
+                                            }
+                                        }
+                                    }
+
                                     info_to_flutter(format!(
                                         "spawn_v2_deposit_event_listener: receive op {operation_id:?} succeeded for fed {federation_id} address={address}, publishing Claimed"
                                     ))
